@@ -1,0 +1,15 @@
+aiogram
+pydantic
+pydantic_settings
+validators
+pyktok
+
+beautifulsoup4
+browser-cookie3
+numpy
+pandas
+requests
+selenium
+streamlit
+webdriver-manager
+pytube
