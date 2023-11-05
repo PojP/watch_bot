@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-import config_reader
+from config_reader import config as config_reader
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-y9ha8h5+bgyhx2np+m8(gf^&1(zcr6!hn7q%*4xj-=amwk+b=e'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config_reader.debug
+DEBUG = config_reader.debug.get_secret_value()
 
-ALLOWED_HOSTS = [config_reader.allowed_hosts]
+ALLOWED_HOSTS = [config_reader.allowed_host.get_secret_value()]
 
 
 # Application definition
@@ -77,11 +77,11 @@ WSGI_APPLICATION = 'antihype_movie.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config_reader.db_name,
-        'USER': config_reader.db_user,
-        'PASSWORD': config_reader.db_password,
-        'HOST': config_reader.db_host,
-        'PORT': config_reader.db_port,
+        'NAME': config_reader.db_name.get_secret_value(),
+        'USER': config_reader.db_user.get_secret_value(),
+        'PASSWORD': config_reader.db_password.get_secret_value(),
+        'HOST': config_reader.db_host.get_secret_value(),
+        'PORT': int(config_reader.db_port.get_secret_value()),
     }
 }
 

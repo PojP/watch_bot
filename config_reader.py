@@ -5,8 +5,6 @@ from pydantic import SecretStr
 class Settings(BaseSettings):
     # Желательно вместо str использовать SecretStr 
     # для конфиденциальных данных, например, токена бота
-    bot_token: SecretStr
-    
     db_host: SecretStr
     db_port: SecretStr
     db_password: SecretStr
