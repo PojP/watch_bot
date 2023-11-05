@@ -6,16 +6,8 @@ class Settings(BaseSettings):
     # Желательно вместо str использовать SecretStr 
     # для конфиденциальных данных, например, токена бота
     bot_token: SecretStr
-    
-    db_host: SecretStr
-    db_port: SecretStr
-    db_password: SecretStr
-    db_name: SecretStr
-    db_user: SecretStr
-    
-    allowed_host: SecretStr
-    
-    debug: SecretStr
+    api_host: SecretStr
+    api_port: SecretStr
 
     # Начиная со второй версии pydantic, настройки класса настроек задаются
     # через model_config
