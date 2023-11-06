@@ -12,15 +12,15 @@ from handlers import main_logic
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
 # Объект бота
-session = AiohttpSession(
-    api=TelegramAPIServer.from_base(config.api_host.get_secret_value()+':'+config.api_port.get_secret_value())
-)
+#session = AiohttpSession(
+#    api=TelegramAPIServer.from_base(config.api_host.get_secret_value()+':'+config.api_port.get_secret_value())
+#)
 # импорты
 
 # Для записей с типом Secret* необходимо 
 # вызывать метод get_secret_value(), 
 # чтобы получить настоящее содержимое вместо '*******'
-bot = Bot(token=config.bot_token.get_secret_value(),parse_mode="HTML",session=session)
+bot = Bot(token=config.bot_token.get_secret_value(),parse_mode="HTML")
 
 # Диспетчер
 dp = Dispatcher()
