@@ -37,12 +37,16 @@ async def add_new_film(msg: types.Message, state: FSMContext, bot: Bot):
 
 async def get_video(msg: types.Message,state: FSMContext, bot: Bot):
     await msg.answer("Теперь скинь название фильма")
-    
-
     await state.set_state(AddingMovieState.movie_title)
+    await state.update_data(video_id=msg.message_id)
+
 
 async def get_text(msg: types.Message,state: FSMContext, bot: Bot):
-    
+    try:
+        pass        
+
+
+    await state.clear()
 
 
 

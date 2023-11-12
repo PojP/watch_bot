@@ -53,11 +53,40 @@ class DB_Controller:
         self.engine.connect()
         metadata.create_all(self.engine)
 
-    async def get_movie(self,title):
+    async def get_movies(self,title):
+        try:
+            conn=self.engine.connect()
+            sel=movies.select().where(title in movies.c.title)
+            movies=conn.execute(sel).fetchall()
+        except Exception as e:
+            return e
+        else:
+            return movies
+    async def add_movie(self,title,msg_id,year):
+        try:
+            conn = self.engine.connect()
+            ins=movies.insert().values(
+                    title=title,
+                    year=year,
+                    tg_id=msg_id
+                    )
+            conn.execute(ins)
+            conn.commit()
+        except Exception as e:
+            return e
+        else:
+            return True
+
+    async def get_active_user_count(self,period):
+        pass
+    async def get_new_user_count(self,period):
         pass
     
-    async def send_movie(self,title,tg_id,year):
+    async def increment_active_users(self):
         pass
+    async def increment_new_users(self):
+        pass
+
 
     async def increment_referrals(self,id):
         try:
