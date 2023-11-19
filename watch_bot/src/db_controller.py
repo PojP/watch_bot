@@ -1,4 +1,3 @@
-from django.db.models import BigIntegerField
 from sqlalchemy import create_engine
 from config_reader import config
 
@@ -37,7 +36,7 @@ active_time = Table('users_activetime', metadata,
 movies= Table('movies_movies', metadata,
     Column('id', Integer(), primary_key=True),
     Column('title', String(200), nullable=False),
-    Column('year', Integer(),  nullable=False),
+    Column('year', Integer(),  nullable=True),
     Column('tg_id', BigInteger(), nullable=False),
     Column('rating', Integer(),  nullable=True),
     )
@@ -49,19 +48,29 @@ movies= Table('movies_movies', metadata,
 class DB_Controller:
     def __init__(self):
         self.engine = create_engine(f"postgresql+psycopg2://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}",
-                                    echo=True, pool_size=6, max_overflow=10)
+                                    echo=False, pool_size=6, max_overflow=10)
         self.engine.connect()
         metadata.create_all(self.engine)
 
     async def get_movies(self,title):
         try:
+            global movies
             conn=self.engine.connect()
-            sel=movies.select().where(title in movies.c.title)
-            movies=conn.execute(sel).fetchall()
-        except Exception as e:
+            sel=movies.select()
+            films=conn.execute(sel).fetchall()
+
+            all_movies=[]
+            for i in films:
+                if title in i[1]:
+                    if i[2] is not None:
+                        br=[i[1]+" "+str(i[2]),i[0]]
+                    else:
+                        br=[i[1],i[0]]
+                    all_movies.append(br)
+        except Exception as e:  
             return e
         else:
-            return movies
+            return all_movies
     async def add_movie(self,title,msg_id,year):
         try:
             conn = self.engine.connect()
@@ -82,10 +91,18 @@ class DB_Controller:
     async def get_new_user_count(self,period):
         pass
     
-    async def increment_active_users(self):
-        pass
-    async def increment_new_users(self):
-        pass
+    async def increment_active_users(self,user_id):
+        try:
+            global active_time
+            conn=self.engine.connect()
+            sel=active_time.select().where(active_time.c.user_id==user_id and active_time.c.time==datetime.now)
+            res=conn.execute(sel).rowcount                                                                                               
+        except AttributeError as e:
+            print(e)
+        except Exception as e:
+            return e
+        else:
+            return res
 
 
     async def increment_referrals(self,id):
@@ -113,13 +130,26 @@ class DB_Controller:
                 )
             conn.execute(ins)
             conn.commit()
+            ins=active_time.insert().values(
+                    user_id=user_id
+                    )
+            conn.execute(ins)
+            conn.commit()
         except Exception as e:
             return e
         else:
             return True
     
-    
-    
+    async def get_users_count(self):
+        try:
+            conn=self.engine.connect()
+            sel=users.select()
+            a=conn.execute(sel).fetchall()
+        except Exception as e:
+            return e
+        else:
+            return len(a)
+
     async def get_user_info(self, user_tg_id):
         try:
             conn=self.engine.connect()

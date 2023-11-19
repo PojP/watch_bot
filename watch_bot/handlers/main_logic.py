@@ -23,12 +23,32 @@ async def send_error_to_devs(msg: types.Message,error: str, error_text: Exceptio
     await msg.answer(user_frienfly_error_text)
 
 
+async def make_movie_keyboard(movies)-> types.InlineKeyboardMarkup:
+    buttons = []        
+    
+    counter=0
+    for i in movies:
+        if counter<7:
+            buttons.append([types.InlineKeyboardButton(text=i[0], callback_data=str(i[1]))])
+            counter+=1                                                                                        
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
 
+    
 
-#BASIC USER COMMANDS
+    #BASIC USER COMMANDS
 #/Film Name
-def search_film(msg: types.Message):
-    pass
+async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
+    movies=await db.get_movies(msg.text)
+    
+    if len(movies)==0:
+        await msg.answer("Ничего не найдено, но запрос отправлен модераторам для добавления нового фильма:)") 
+    else:                                            
+        b=await make_movie_keyboard(movies)
+        await msg.answer(msg.text,reply_markup=b)
+                                                                                                                                       
+
+
 
 
 
@@ -92,6 +112,16 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
     user_info= await db.get_user_info(msg.from_user.id)
     print(user_info)
 
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+        text="Профиль",
+        callback_data="profile"),
+        types.InlineKeyboardButton(
+            text="Тех. Поддержка",
+            callback_data="help"
+            )
+    )
+
     if user_info is None:
         await increment_referral(msg,command,bot)    
         link = await create_start_link(bot,
@@ -108,10 +138,13 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
         if a is Exception:
             await send_error_to_devs(msg,"Ошибка при команде /start",a,bot)
         else:
-            await msg.answer("Привет! Это бот для просмотра фильмов. Просто введи название и получи фильм:)\nВесь список команд - /help")
-    
+            photo=FSInputFile("res/main.png")
+            await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
+            await msg.answer("Чтобы найти фильм - просто введи название:)")
     else:
-        await msg.answer("Привет! Это бот для просмотра фильмов. Просто введи название и получи фильм:)\nВесь список команд - /help")
+        photo=FSInputFile("res/main.png")
+        await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
+        await msg.answer("Чтобы найти фильм - просто введи название:)")
 
 def register_handlers():
     
@@ -119,7 +152,7 @@ def register_handlers():
     adm_l=config.admin_list.get_secret_value().split(',')
     
     router.message.middleware(UserTypeMiddleware(work_l,adm_l,"average"))
-
+    router.message.register(search_film,F.text[0]!="/")
     router.message.register(start, Command('start'))
     router.message.register(help, Command('help'))
     router.message.register(profile,Command('profile'))
