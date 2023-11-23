@@ -8,6 +8,7 @@ from aiogram import F
 from src.db_controller import db
 from aiogram.utils.deep_linking import create_start_link, decode_payload
 from config_reader import config
+from aiogram.filters import StateFilter
 from middlewares.user_type_middleware import UserTypeMiddleware
 router=Router()
 user_frienfly_error_text="Произошла ошибка. Она уже отправлена разработчикам:("
@@ -34,15 +35,18 @@ async def make_movie_keyboard(movies)-> types.InlineKeyboardMarkup:
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
 
-    
+async def get_film(callback: CallbackQuery,bot:Bot):
+    print(callback)
+    await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),protect_content=True) 
+                                                                                                                                                                                                                 
 
     #BASIC USER COMMANDS
 #/Film Name
 async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
     movies=await db.get_movies(msg.text)
-    
     if len(movies)==0:
         await msg.answer("Ничего не найдено, но запрос отправлен модераторам для добавления нового фильма:)") 
+        await db.add_search_query(msg.text,msg.from_user.id)
     else:                                            
         b=await make_movie_keyboard(movies)
         await msg.answer(msg.text,reply_markup=b)
@@ -50,20 +54,23 @@ async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
 
 
 
-
-
-
 #/profile
-async def profile(msg: types.Message,bot: Bot):
-    user_info=await db.get_user_info(msg.from_user.id)
+async def profile(callback: CallbackQuery,bot: Bot):
+    user_info=await db.get_user_info(callback.from_user.id)
     
-    print(type(user_info))
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+        text="Главная",
+        callback_data="main")
+    )
+
     if type(user_info) is Exception:
-        await send_error_to_devs(msg,"Ошибка при команде /profile",user_info)
+        await send_error_to_devs(callback.message,error=user_info,error_text="Ошибка при команде /profile",bot=bot)
     else:
         text=f"<b>Профиль:</b>\n\nРеферальная ссылка:\n{user_info[3]}\nКоличество рефералов:{user_info[4]}"
-
-        await msg.answer(text)
+        pic=FSInputFile("res/profile.png")
+        img=types.input_media_photo.InputMediaPhoto(media=pic,caption=text)
+        await callback.message.edit_media(media=img,reply_markup=builder.as_markup())
 #/help
 def command_builder(msg: types.Message) -> str:
     command_list="<b>Весь список комманд:</b>\n"
@@ -101,58 +108,84 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
     referral = command.args
     if referral is not None:
         referral=decode_payload(referral)
-        print(referral)
         a=await db.increment_referrals(referral)
+        
+        b=await db.get_user_info(referral)
+        if b[4]==3:
+            await db.disable_ads(referral)
+            await bot.send_message(referral,"<b>Количество рефералов равно 3. Реклама отключена!</b>")
+
         await bot.send_message(referral,"<b>По вашей реферальной ссылке есть новый пользователь!</b>")
         if isinstance(a, Exception):
             print(a)
             await send_error_to_devs(msg,"Ошибка при инкременте реферала",a,bot)
 
+async def callback_start(callback: CallbackQuery,bot: Bot):
+    try:
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text="Профиль",
+            callback_data="profile"),
+            types.InlineKeyboardButton(
+                text="Тех. Поддержка",
+                url=config.help_chat.get_secret_value()
+                )
+        )
+        pic=FSInputFile("res/main.png") 
+        img=types.input_media_photo.InputMediaPhoto(media=pic)
+        await callback.message.edit_media(media=img,reply_markup=builder.as_markup())
+    except Exception as e:                                                                                                                           
+        await send_error_to_devs(callback.message,error=e,error_text="Ошибка при нажатии кнопки Главная",bot=bot)
+
 async def start(msg: types.Message, command: CommandObject,bot: Bot):
-    user_info= await db.get_user_info(msg.from_user.id)
-    print(user_info)
+    try:
+        user_info= await db.get_user_info(msg.from_user.id)
+        
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text="Профиль",
+            callback_data="profile"),
+            types.InlineKeyboardButton(
+                text="Тех. Поддержка",
+                url=config.help_chat.get_secret_value()
 
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(
-        text="Профиль",
-        callback_data="profile"),
-        types.InlineKeyboardButton(
-            text="Тех. Поддержка",
-            callback_data="help"
-            )
-    )
+                )
+        )
 
-    if user_info is None:
-        await increment_referral(msg,command,bot)    
-        link = await create_start_link(bot,
+        if user_info is None:
+            await increment_referral(msg,command,bot)    
+            link = await create_start_link(bot,
                 str(msg.from_user.id),
                 encode=True)
-        print(link)
 
-        a=await db.register_user(user_id=msg.from_user.id,
+            a=await db.register_user(user_id=msg.from_user.id,
                             username=msg.from_user.username,
                             referral_link=link
                             )
-        print(a)
         
-        if a is Exception:
-            await send_error_to_devs(msg,"Ошибка при команде /start",a,bot)
+            if a is Exception:
+                await send_error_to_devs(msg,"Ошибка при команде /start",a,bot)
+            else:
+                photo=FSInputFile("res/main.png")
+                await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
+                await msg.answer("Чтобы найти фильм - просто введи название:)")
+                await msg.answer("Если вы приведете 3х людей по реф. ссылке в профиле - \n<b>У Вас Навсегда Отключится Реклама!</b>")
+                await db.increment_active_users(msg.from_user.id)
         else:
             photo=FSInputFile("res/main.png")
             await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
             await msg.answer("Чтобы найти фильм - просто введи название:)")
-    else:
-        photo=FSInputFile("res/main.png")
-        await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
-        await msg.answer("Чтобы найти фильм - просто введи название:)")
-
-def register_handlers():
+    except Exception as e:
+        await send_error_to_devs(msg,error=e,error_text="Ошибка при команде /start",bot=bot)    
+def register_handlers():                                                                                           
     
     work_l=config.workers_list.get_secret_value().split(',')
     adm_l=config.admin_list.get_secret_value().split(',')
     
+    router.callback_query.register(profile, F.data=="profile")
+    router.callback_query.register(callback_start,F.data=="main")
+    router.callback_query.register(get_film, F.data.isdigit())
     router.message.middleware(UserTypeMiddleware(work_l,adm_l,"average"))
-    router.message.register(search_film,F.text[0]!="/")
+    router.message.register(search_film,F.text[0]!="/",StateFilter(None))
     router.message.register(start, Command('start'))
     router.message.register(help, Command('help'))
-    router.message.register(profile,Command('profile'))

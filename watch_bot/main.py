@@ -5,9 +5,11 @@ from aiogram.filters.command import Command
 from config_reader import config
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.client.session.aiohttp import AiohttpSession
-
-from handlers import main_logic
-
+from aiogram.fsm.storage.redis import RedisStorage
+from handlers import main_logic, admin
+from middlewares.usage_middleware import UsageFrequencyMiddleware
+from middlewares.subscription_middleware import SubscriptionMiddleware
+from middlewares.throttling_middleware import ThrottlingMiddleware
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 # вызывать метод get_secret_value(), 
 # чтобы получить настоящее содержимое вместо '*******'
 bot = Bot(token=config.bot_token.get_secret_value(),parse_mode="HTML")
-
+storage=RedisStorage.from_url('redis://localhost:6379/0')
 # Диспетчер
 dp = Dispatcher()
 
@@ -37,8 +39,14 @@ dp = Dispatcher()
 # Запуск процесса поллинга новых апдейтов
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
+    dp.message.outer_middleware(ThrottlingMiddleware(storage))
+    dp.callback_query.outer_middleware(ThrottlingMiddleware(storage))
+    dp.update.outer_middleware(UsageFrequencyMiddleware())                                                                                                            
+    dp.message.middleware(SubscriptionMiddleware())
     dp.include_router(main_logic.router)
     main_logic.register_handlers()
+    dp.include_router(admin.router)
+    admin.register_handlers()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
