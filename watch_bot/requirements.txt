@@ -1,0 +1,10 @@
+aiogram
+pydantic
+pydantic_settings
+django
+sqlalchemy
+psycopg2
+pyrogram
+tgcrypto
+redis
+gunicorn

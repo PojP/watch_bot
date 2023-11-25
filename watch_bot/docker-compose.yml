@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+  bot:
+    build: .
+    command: sh -c "python3 main.py"
+    env_file:
+      - .env
+    restart: always
+    network_mode: host

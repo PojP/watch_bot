@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 # вызывать метод get_secret_value(), 
 # чтобы получить настоящее содержимое вместо '*******'
 bot = Bot(token=config.bot_token.get_secret_value(),parse_mode="HTML")
-storage=RedisStorage.from_url('redis://localhost:6379/0')
+storage=RedisStorage.from_url(config.redis_link.get_secret_value())
 # Диспетчер
 dp = Dispatcher()
 

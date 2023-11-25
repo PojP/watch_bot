@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     admin_list: SecretStr
     api_id: SecretStr
     api_hash: SecretStr
+    redis_link: SecretStr
     # Начиная со второй версии pydantic, настройки класса настроек задаются
     # через model_config
     # В данном случае будет использоваться файла .env, который будет прочитан
