@@ -2,7 +2,8 @@ aiogram
 pydantic
 pydantic_settings
 django
-sqlalchemy
+sqlalchemy[asyncio]
+asyncpg
 psycopg2
 pyrogram
 tgcrypto

@@ -152,7 +152,7 @@ async def confirm_post(msg:types.Message, state: FSMContext, bot: Bot):
             b=await post.send_copy(post_channel_id)
             await db.add_post_id(b.message_id,time,amount)
         
-            users=await db.get_users_tgids(amount)
+            users=await db.get_users_tgids_ads(amount)
         
             cn=0
             for i in users:

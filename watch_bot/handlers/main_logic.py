@@ -1,4 +1,5 @@
 from aiogram import Router, types, Bot
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.command import Command, CommandObject
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -54,7 +55,7 @@ async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
         else:                                            
             b=await make_movie_keyboard(movies)
 
-            await msg.answer(msg.text,reply_markup=b)
+            await msg.answer("Результаты по запросу: "+msg.text,reply_markup=b)
     except Exception as e:
         await send_error_to_devs(msg,error=e,error_text="Ошибка при Поиске Фильма",bot=bot)
 
@@ -87,17 +88,16 @@ def command_builder(msg: types.Message) -> str:
     command_list="<b>Весь список комманд:</b>\n"
     start_cmd="/start - Перезапустить бота\n"
     help_cmd="/help - Все команды\n"
-    profile_cmd="/profile - Количество рефералов и собственная реферальная ссылка\n"
     gap="\n"
-    text=command_list+start_cmd+help_cmd+profile_cmd
+    text=command_list+start_cmd+help_cmd
     
     workers_list=config.workers_list.get_secret_value().split(',') 
     admin_list=config.admin_list.get_secret_value().split(',')
     
 
     if str(msg.from_user.id) in workers_list:
-        add_film_cmd="/add_film - добавить новый фильм\n"
-        popular_queries_cmd="/queries - Топ 10 неудовлетворенных запросов\n"
+        add_film_cmd="/add - добавить новый фильм\n"
+        popular_queries_cmd="/history - Топ 10 неудовлетворенных запросов\n"
         text+=gap+add_film_cmd+popular_queries_cmd
     
     if str(msg.from_user.id) in admin_list:
@@ -123,16 +123,18 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
             a=await db.increment_referrals(referral)
         
             b=await db.get_user_info(referral)
-            if b[4]==3:
+            if b[4]==5:
                 await db.disable_ads(referral)
-                await bot.send_message(referral,"<b>Количество рефералов равно 3. Реклама отключена!</b>")
+                await bot.send_message(referral,"<b>Количество рефералов равно 5. Реклама отключена!</b>")
 
             await bot.send_message(referral,"<b>По вашей реферальной ссылке есть новый пользователь!</b>")
             if isinstance(a, Exception):
                 print(a)
-                await send_error_to_devs(msg,"Ошибка при инкременте реферала",a,bot)
+                await send_error_to_devs(msg,error=a,error_text="Ошибка при инкременте реферала",bot=bot)
+
     except Exception as e:
-        await send_error_to_devs(msg,"Ошибка при инкременте реферала",e,bot)
+        print("HERE")
+        return await send_error_to_devs(msg,error=e,error_text="Ошибка при инкременте реферала",bot=bot)
 
 
 async def callback_start(callback: CallbackQuery,bot: Bot):
@@ -168,7 +170,7 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
         )
 
         if user_info is None:
-            await increment_referral(msg,command,bot)    
+            await increment_referral(msg,command,bot)
             link = await create_start_link(bot,
                 str(msg.from_user.id),
                 encode=True)
@@ -184,7 +186,7 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
                 photo=FSInputFile("res/main.png")
                 await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
                 await msg.answer("Чтобы найти фильм - просто введи название:)")
-                await msg.answer("Если вы приведете 3х людей по реф. ссылке в профиле - \n<b>У Вас Навсегда Отключится Реклама!</b>")
+                await msg.answer("Если вы приведете 5х людей по реф. ссылке в профиле - \n<b>У Вас Навсегда Отключится Реклама!</b>")
                 await db.increment_active_users(msg.from_user.id)
         else:
             photo=FSInputFile("res/main.png")
