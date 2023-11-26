@@ -18,11 +18,12 @@ user_frienfly_error_text="Произошла ошибка. Она уже отп�
 
                                                                                                                           
 
-async def send_error_to_devs(msg: types.Message,error: str, error_text: Exception,bot: Bot):
+async def send_error_to_devs(msg: types.Message,error: str, error_text: Exception,bot: Bot,send_to_user=True):
     for i in config.admin_list.get_secret_value().split(','):
         await bot.send_message(i,f"<b>{error}</b>")
         await bot.send_message(i,f"Текст ошибки:\n\n{error_text}")
-    await msg.answer(user_frienfly_error_text)
+    if send_to_user:
+        await msg.answer(user_frienfly_error_text)
 
 
 async def make_movie_keyboard(movies)-> types.InlineKeyboardMarkup:
@@ -118,10 +119,10 @@ async def help(msg: types.Message):
 async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot):
     try:
         referral = command.args
+        print(referral)
         if referral is not None:
-            referral=decode_payload(referral)
+            referral=int(decode_payload(referral))
             a=await db.increment_referrals(referral)
-        
             b=await db.get_user_info(referral)
             if b[4]==5:
                 await db.disable_ads(referral)
@@ -129,12 +130,11 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
 
             await bot.send_message(referral,"<b>По вашей реферальной ссылке есть новый пользователь!</b>")
             if isinstance(a, Exception):
-                print(a)
-                await send_error_to_devs(msg,error=a,error_text="Ошибка при инкременте реферала",bot=bot)
+                await send_error_to_devs(msg,error=a,error_text="Ошибка при инкременте реферала",bot=bot,send_to_user=False)
 
     except Exception as e:
-        print("HERE")
-        return await send_error_to_devs(msg,error=e,error_text="Ошибка при инкременте реферала",bot=bot)
+        print(e)
+        return await send_error_to_devs(msg,error=e,error_text="Ошибка при инкременте реферала",bot=bot,send_to_user=False)
 
 
 async def callback_start(callback: CallbackQuery,bot: Bot):
