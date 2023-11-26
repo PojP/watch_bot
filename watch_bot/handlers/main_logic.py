@@ -66,8 +66,9 @@ async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
 #/profile
 async def profile(callback: CallbackQuery,bot: Bot):
     try:
+        print(callback)
         user_info=await db.get_user_info(callback.from_user.id)
-    
+        print(user_info)
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(
             text="Главная",
@@ -82,6 +83,7 @@ async def profile(callback: CallbackQuery,bot: Bot):
             img=types.input_media_photo.InputMediaPhoto(media=pic,caption=text)
             await callback.message.edit_media(media=img,reply_markup=builder.as_markup())
     except Exception as e:
+        print(e)
         await send_error_to_devs(callback.message,error=e,error_text="Ошибка при нажатии кнопки Профиль",bot=bot)
 
 #/help
@@ -174,12 +176,17 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
             link = await create_start_link(bot,
                 str(msg.from_user.id),
                 encode=True)
-
-            a=await db.register_user(user_id=msg.from_user.id,
+            if msg.from_user.username is not None:
+                a=await db.register_user(user_id=msg.from_user.id,
                             username=msg.from_user.username,
                             referral_link=link
                             )
-        
+            else:
+                a=await db.register_user(user_id=msg.from_user.id,
+                            username="NoneType",
+                            referral_link=link
+                            )
+
             if a is Exception:
                 await send_error_to_devs(msg,"Ошибка при команде /start",a,bot)
             else:

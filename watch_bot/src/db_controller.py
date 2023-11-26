@@ -9,7 +9,7 @@ metadata = MetaData()
 users = Table('users_users', metadata, 
     Column('id', Integer(), primary_key=True),
     Column('tg_id', BigInteger(), nullable=False,unique=True),
-    Column('username', String(100),  nullable=False),
+    Column('username', String(100),  nullable=True),
     Column('referral_link', String(200), nullable=False,unique=True),
     Column('referrals', Integer(), default=0),
     Column('ads_on', Boolean(),default=True),
