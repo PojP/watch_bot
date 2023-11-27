@@ -183,6 +183,80 @@ async def stop(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("Отмена!")
 
+class DeleteMovieState(StatesGroup):
+    confirm=State()
+
+class RemoveAdsForUser(StatesGroup):
+    get_user_id=State()
+
+class AddAdsForUser(StatesGroup):
+    get_user_id=State()
+
+
+
+async def delete_movie(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    data=int(callback.data.replace('delete_',''))
+    print(data)
+    await state.set_state(DeleteMovieState.confirm)
+    await state.update_data(tg_id=data)
+    await callback.message.answer("Вы действительно хотите удалить?")
+async def confirm_delete(msg: types.Message, state: FSMContext,bot: Bot):
+    try:
+        if msg.text.lower() == "да":
+            data=await state.get_data()
+            print(data)
+            tgid=data['tg_id']
+
+            await db.delete_movie_by_tg_id(tgid)
+            await bot.delete_message(int(config.chat_id.get_secret_value()),tgid)
+            await msg.answer("По кайфу")                                                  
+            await state.clear()
+        else:
+            await msg.answer("Отмена")
+            await state.clear()
+    except Exception as e:
+        await msg.answer("Ошибка")
+        await send_error_to_devs(msg=msg,error=e,error_text="Ошибка при удалении фильма",bot=bot)
+        print(e)
+
+async def remove_ads_for_user(msg: types.Message, state: FSMContext,bot: Bot):
+    await state.set_state(RemoveAdsForUser.get_user_id)
+    await msg.answer("Отправь сообщение от него")
+async def send_user_remove(msg: types.Message, state:FSMContext, bot: Bot):
+    try:
+        userid=msg.forward_from.id 
+        if userid is not None:
+            await db.disable_ads(userid)
+            await bot.send_message(userid,"Вам отключили рекламу!")
+            await msg.answer("По кайфу")
+            await state.clear()
+        else:
+            await msg.answer("Введи не беспонтовую хрень")
+    except Exception as e:
+        await state.clear()
+        await msg.answer("Ошибка")
+        await send_error_to_devs(msg=msg,error=e,error_text="Ошибка при отключении рекламы",bot=bot)
+        print(e)
+
+async def add_ads_for_user(msg: types.Message, state: FSMContext,bot: Bot):
+    await state.set_state(AddAdsForUser.get_user_id)
+    await msg.answer("Отправь сообщение от него")
+async def send_user_adding(msg: types.Message, state:FSMContext, bot: Bot):
+    try:
+        userid=msg.forward_from.id 
+        if userid is not None:
+            await db.disable_ads(userid)
+            await bot.send_message(userid,"Вам снова подключили рекламу!")
+            await msg.answer("По кайфу")
+            await state.clear()
+        else:
+            await msg.answer("Введи не беспонтовую хрень")
+    except Exception as e:
+        await state.clear()
+        await msg.answer("Ошибка")
+        await send_error_to_devs(msg=msg,error=e,error_text="Ошибка при подключении рекламы",bot=bot)
+        print(e)
+        
 def register_handlers():                                                                                           
     
     work_l=config.workers_list.get_secret_value().split(',')
@@ -200,5 +274,15 @@ def register_handlers():
     router.message.register(set_time,StateFilter(AutoPostStates.GetTime),F.text.func(lambda text: len(text.split())==5))
     router.message.register(set_user_amount,StateFilter(AutoPostStates.GetUserAmount), F.text.isdigit())
     router.message.register(confirm_post,StateFilter(AutoPostStates.GetConfirmation),F.text.lower().in_({"да","нет"}))                                    
-    router.message.register(stop,StateFilter(AutoPostStates),Command('stop'))
+    router.message.register(stop,~StateFilter(None),Command('stop'))
+    
+    router.callback_query.register(delete_movie,StateFilter(None),F.data.contains("delete_"))
+    router.message.register(confirm_delete,StateFilter(DeleteMovieState.confirm),F.text.lower().in_({"да","нет"}))
+    
+    router.message.register(remove_ads_for_user,StateFilter(None),Command("d_ads"))
+    router.message.register(send_user_remove,StateFilter(RemoveAdsForUser.get_user_id),F.forward_from.is_not(None))
+    
+    router.message.register(add_ads_for_user,StateFilter(None),Command("e_ads"))
+    router.message.register(send_user_adding,StateFilter(AddAdsForUser.get_user_id),F.forward_from.is_not(None))
+    
 

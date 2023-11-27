@@ -114,8 +114,20 @@ class DB_Controller:
             print(e)
             return e
         return     
-
-
+    async def delete_movie_by_tg_id(self,tg_id):
+        try:
+            global movies
+            async with self.engine.connect() as conn:
+                sel=movies.delete().where(
+                        movies.c.tg_id==tg_id
+                        )
+                await conn.execute(sel)
+                await conn.commit()
+                
+        except Exception as e: 
+            print(e)
+            return e
+        return 
     async def add_movie(self,title,msg_id,year):
         try:
             async with self.engine.connect() as conn:
@@ -203,6 +215,20 @@ class DB_Controller:
                     users.c.tg_id==user_id
                     ).values(
                         ads_on=False
+                            )
+                await conn.execute(upd)
+                await conn.commit()
+            
+        except Exception as e:
+            return e
+
+    async def enable_ads(self,user_id):
+        try:
+            async with self.engine.connect() as conn:
+                upd=users.update().where(
+                    users.c.tg_id==user_id
+                    ).values(
+                        ads_on=True
                             )
                 await conn.execute(upd)
                 await conn.commit()

@@ -39,11 +39,21 @@ async def make_movie_keyboard(movies)-> types.InlineKeyboardMarkup:
 
 async def get_film(callback: CallbackQuery,bot:Bot):
     try:
+        if str(callback.from_user.id) in config.workers_list.get_secret_value().split(','):
+            builder = InlineKeyboardBuilder()
+            builder.add(types.InlineKeyboardButton(
+                text="Удалить",
+                callback_data=f"delete_{callback.data}")
+            )
 
-        await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),protect_content=True)
-        await callback.message.delete()
+            await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),reply_markup=builder.as_markup(),protect_content=True)
+            await callback.message.delete()
+        else:
+            await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),protect_content=True)
+            await callback.message.delete()
     except Exception as e:
-        await send_error_to_devs(msg,error=e,error_text="Ошибка при отправке фильма",bot=bot)
+        print(e)
+        await send_error_to_devs(callback.message,error=e,error_text="Ошибка при отправке фильма",bot=bot)
 
     #BASIC USER COMMANDS
 #/Film Name
