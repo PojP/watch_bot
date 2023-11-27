@@ -81,7 +81,8 @@ async def get_confirmation(msg: types.Message, state: FSMContext, bot: Bot):
             sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}\n{data['year']}")
             await db.add_movie(data['title'],sended_movie.message_id,int(data['year']))
             if db_movies is not None:
-                await db.delete_movie(db_movies)
+                await db.delete_movie_by_tg_id(db_movies)
+                await bot.delete_message(int(config.chat_id.get_secret_value()),int(db_movies))
                 await msg.answer("Старый фильм удален!")
             await msg.answer("Все по кайфу")
             await state.clear()

@@ -85,14 +85,12 @@ class DB_Controller:
                         else:
                             br=[i[1],i[3]]
                         all_movies.append(br)
-                
+
                 result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                              
                 result=list(result)
                 result=sorted(result,key=lambda k:k[1])
                 all_movies=[]
                 for i in result:
-                    print(i)
-                    print(len(i[0]))
                     if len(i[0])==3:
                         br=[i[0][0]+" "+str(i[0][1]),i[0][2]]
                         all_movies.append(br)
@@ -117,9 +115,9 @@ class DB_Controller:
                     if self.remove_all_symbols(title) == self.remove_all_symbols(i[1]):
                         if i[2] is not None and year is not None:
                             if year==i[2]:
-                                return i[0]                                                    
+                                return i[3]                                                    
                         else:
-                            return i[0]        
+                            return i[3]        
                 return
         except Exception as e:
             print(e)
