@@ -91,7 +91,13 @@ class DB_Controller:
                 result=sorted(result,key=lambda k:k[1])
                 all_movies=[]
                 for i in result:
-                    all_movies.append(i[0])
+                    print(i)
+                    print(len(i[0]))
+                    if len(i[0])==3:
+                        br=[i[0][0]+" "+str(i[0][1]),i[0][2]]
+                        all_movies.append(br)
+                    else:
+                        all_movies.append(i[0])
         except Exception as e:
             print(e)
             return e
