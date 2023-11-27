@@ -58,6 +58,18 @@ class DB_Controller:
     def remove_all_symbols(self,s:str):
         return s.replace('.','').replace(',','').replace(':','').lower()
 
+    def movie_sorter(self, s,query):
+        e_query=self.remove_all_symbols(query)
+        e_s=s.copy()
+        e_s[0]=self.remove_all_symbols(e_s[0])
+        
+
+        if e_s[0].startswith(e_query):
+            if len(e_query)/len(e_s[0])>=0.3:
+                return [s,0]
+            return [s,1]
+        return [s,2]
+
     async def get_movies(self,title):
         try:
             global movies
@@ -69,10 +81,17 @@ class DB_Controller:
                 for i in films:
                     if self.remove_all_symbols(title) in self.remove_all_symbols(i[1]):
                         if i[2] is not None:
-                            br=[i[1]+" "+str(i[2]),i[3]]
+                            br=[i[1],str(i[2]),i[3]]
                         else:
                             br=[i[1],i[3]]
                         all_movies.append(br)
+                
+                result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                              
+                result=list(result)
+                result=sorted(result,key=lambda k:k[1])
+                all_movies=[]
+                for i in result:
+                    all_movies.append(i[0])
         except Exception as e:
             print(e)
             return e
