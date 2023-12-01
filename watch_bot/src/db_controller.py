@@ -39,7 +39,13 @@ movies= Table('movies_movies', metadata,
     Column('tg_id', BigInteger(), nullable=False),
     Column('rating', Integer(),  nullable=True),
     )
-
+series = Table('series_series', metadata,
+    Column('id', Integer(), primary_key=True),
+    Column('title', String(200), nullable=False),
+    Column('year', Integer(),  nullable=True),
+    Column('channel_link', String(200), nullable=False),
+    Column('rating', Integer(),  nullable=True),
+    )
 
 
 
@@ -76,15 +82,27 @@ class DB_Controller:
             async with self.engine.connect() as conn:
                 sel=movies.select()
                 films=(await conn.execute(sel)).fetchall()
-
-                all_movies=[]
-                for i in films:
+                sel=series.select()
+                series_links=(await conn.execute(sel)).fetchall()
+                
+                all_movies=[]                                                                                                 
+                for i in films: 
                     if self.remove_all_symbols(title) in self.remove_all_symbols(i[1]):
                         if i[2] is not None:
                             br=[i[1],str(i[2]),i[3]]
                         else:
                             br=[i[1],i[3]]
                         all_movies.append(br)
+
+                for i in series_links: 
+                    if self.remove_all_symbols(title) in self.remove_all_symbols(i[1]):
+                        if i[2] is not None:
+                            br=[i[1],str(i[2]),i[3]]
+                        else:
+                            br=[i[1],i[3]]
+                        all_movies.append(br)
+
+
 
                 result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                              
                 result=list(result)
@@ -122,6 +140,25 @@ class DB_Controller:
         except Exception as e:
             print(e)
             return e
+    async def get_series_for_add(self,title,year=None):
+        try:
+            async with self.engine.connect() as conn:
+                sel=series.select()
+                films=(await conn.execute(sel)).fetchall()
+
+                for i in films:
+                    if self.remove_all_symbols(title) == self.remove_all_symbols(i[1]):
+                        if i[2] is not None and year is not None:
+                            if year==i[2]:
+                                return i[3]                                                    
+                        else:
+                            return i[3]        
+                return
+        except Exception as e:
+            print(e)
+            return e
+
+
     
     async def delete_movie(self,movie_id):
         try:
@@ -137,6 +174,22 @@ class DB_Controller:
             print(e)
             return e
         return     
+
+    async def delete_series(self,series_id):
+        try:
+            async with self.engine.connect() as conn:
+                sel=series.delete().where(
+                        series.c.id==series_id
+                        )
+                await conn.execute(sel)
+                await conn.commit()
+                
+        except Exception as e: 
+            print(e)
+            return e
+        return     
+
+
     async def delete_movie_by_tg_id(self,tg_id):
         try:
             global movies
@@ -151,12 +204,27 @@ class DB_Controller:
             print(e)
             return e
         return 
+
+    async def delete_serial_by_channel_link(self,channel_link):
+        try:
+            async with self.engine.connect() as conn:
+                sel=series.delete().where(
+                        series.c.channel_link==channel_link
+                        )
+                await conn.execute(sel)
+                await conn.commit()
+        except Exception as e: 
+            print(e)
+            return e
+        return 
+
+
     async def add_movie(self,title,msg_id,year):
         try:
             async with self.engine.connect() as conn:
                 ins=movies.insert().values(
                     title=title,
-                    year=year,
+                    year=int(year),
                     tg_id=msg_id
                     )
                 a=await conn.execute(ins)
@@ -165,6 +233,25 @@ class DB_Controller:
             return e
         else:
             return True
+    
+    async def add_serial(self, title,channel_link,year):
+        try:
+            async with self.engine.connect() as conn:
+                ins=series.insert().values(
+                    title=title,
+                    year=int(year),
+                    channel_link=channel_link
+                    )
+                a=await conn.execute(ins)
+                await conn.commit()
+        except Exception as e:
+            print(e)
+            return e
+        else:
+            return True
+
+
+
 
 
     async def get_active_user_count(self,period):
@@ -193,6 +280,8 @@ class DB_Controller:
 
         except Exception as e:
             print(e)
+
+
 
     async def get_search_history(self,treshold):
         try:

@@ -39,18 +39,40 @@ async def make_movie_keyboard(movies)-> types.InlineKeyboardMarkup:
 
 async def get_film(callback: CallbackQuery,bot:Bot):
     try:
+
+
         if str(callback.from_user.id) in config.workers_list.get_secret_value().split(','):
             builder = InlineKeyboardBuilder()
             builder.add(types.InlineKeyboardButton(
                 text="Удалить",
-                callback_data=f"delete_{callback.data}")
-            )
+                callback_data=f"delete_{callback.data}"))
 
-            await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),reply_markup=builder.as_markup(),protect_content=True)
-            await callback.message.delete()
+
+            if callback.data.startswith("https://t.me/"):            
+                builder = InlineKeyboardBuilder()
+                builder.add(types.InlineKeyboardButton(
+                    text="Удалить",
+                    callback_data=f"delete_{callback.data}"),
+                    types.InlineKeyboardButton(
+                        text="Перейти в канал",
+                        url=callback.data
+                    )
+                )
+                await callback.message.answer(f"Haжмите на кнопку{callback.data}",reply_markup=builder.as_markup(),protect_content=True)                                              
+            else:
+                await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=callback.data,reply_markup=builder.as_markup(),protect_content=True)
         else:
-            await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=int(callback.data),protect_content=True)
-            await callback.message.delete()
+            if callback.data.startswith("https://t.me/"):
+                builder = InlineKeyboardBuilder()                                                                               
+                builder.add(types.InlineKeyboardButton(
+                        text="Перейти в канал",
+                        url=callback.data
+                    )
+                )
+                await callback.message.answer(f"Нажмите на кнопку",reply_markup=builder.as_markup(),protect_content=True)                                              
+            else:
+                await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=callback.data,protect_content=True)
+        await callback.message.delete()
     except Exception as e:
         print(e)
         await send_error_to_devs(callback.message,error=e,error_text="Ошибка при отправке фильма",bot=bot)
@@ -218,7 +240,7 @@ def register_handlers():
     
     router.callback_query.register(profile, F.data=="profile")
     router.callback_query.register(callback_start,F.data=="main")
-    router.callback_query.register(get_film, F.data.isdigit())
+    router.callback_query.register(get_film, F.data.isdigit().__or__(F.data.startswith('https://t.me/')))
     router.message.middleware(UserTypeMiddleware(work_l,adm_l,"average"))
     router.message.register(search_film,F.text[0]!="/",StateFilter(None))
     router.message.register(start, Command('start'))
