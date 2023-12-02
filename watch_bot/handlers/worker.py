@@ -53,10 +53,14 @@ async def confirm(msg: types.Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     title=data['title']
     year=data['year']
-    if data['video_msg'].text.startswith('t.me/'):
-        await data['video_msg'].copy_to(msg.from_user.id)
+    if data['video_msg'].text is not None:
+        if data['video_msg'].text.startswith('t.me/') or data['video_msg'].text.startswith('https://t.me/'):
+            await data['video_msg'].copy_to(msg.from_user.id)
+        else:
+            await data['video_msg'].copy_to(msg.from_user.id,caption=f"{title}\n{year}")
     else:
         await data['video_msg'].copy_to(msg.from_user.id,caption=f"{title}\n{year}")
+
     await msg.answer(f"Название: {title}\nГод: {year}")                                                                
     await msg.answer("Вы ввели такие данные. Подтвердить?")                                                    
     await state.set_state(AddingMovieState.movie_confirm)
@@ -67,12 +71,15 @@ async def confirm_next(msg: types.Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     title=data['title']
     year=data['year']
-
-    if data['video_msg'].text.startswith('t.me/'):
-        await data['video_msg'].copy_to(msg.from_user.id)
+    if data['video_msg'].text is not None: 
+        if data['video_msg'].text.startswith('t.me/') or data['video_msg'].text.startswith('https://t.me/'):
+            await data['video_msg'].copy_to(msg.from_user.id)
+        else:
+            await data['video_msg'].copy_to(msg.from_user.id,caption=f"{title}\n{year}")
     else:
         await data['video_msg'].copy_to(msg.from_user.id,caption=f"{title}\n{year}")
-    await msg.answer(f"Название: {title}\nГод: {title}")                                                                
+
+    await msg.answer(f"Название: {title}\nГод: нет")                                                                
     await msg.answer("Вы ввели такие данные. Подтвердить?")                                                    
     await state.set_state(AddingMovieState.movie_confirm)
 
@@ -80,32 +87,49 @@ async def get_confirmation(msg: types.Message, state: FSMContext, bot: Bot):
     try:
         if msg.text.lower()=="да":
             data=await state.get_data()
-            if data['video_msg'].text.startswith('t.me/'):
-                db_series=await db.get_series_for_add(data['title'],data['year'])
-                await db.add_serial(data['title'],"https://"+data['video_msg'].text,data['year'])
+            
+            if data['video_msg'].text is not None:
+                if data['video_msg'].text.startswith('t.me/'):
+                    db_series=await db.get_series_for_add(data['title'],data['year'])
+                    await db.add_serial(data['title'],"https://"+data['video_msg'].text,data['year'])
                 
-                if db_series is not None:
-                    await db.delete_serial_by_channel_link(db_series)
-                    await msg.answer("Старый сериал удален!")
-            elif data['video_msg'].text.startswith('https://t.me/'):
-                db_series=await db.get_series_for_add(data['title'],data['year'])
-                await db.add_serial(data['title'],data['video_msg'].text,data['year'])
-                print(db_series) 
-                if db_series is not None:
-                    await db.delete_serial_by_channel_link(db_series)
-                    await msg.answer("Старый сериал удален!")
+                    if db_series is not None:
+                        await db.delete_serial_by_channel_link(db_series)
+                        await msg.answer("Старый сериал удален!")
+                elif data['video_msg'].text.startswith('https://t.me/'):
+                    db_series=await db.get_series_for_add(data['title'],data['year'])
+                    await db.add_serial(data['title'],data['video_msg'].text,data['year'])
+                    print(db_series) 
+                    if db_series is not None:
+                        await db.delete_serial_by_channel_link(db_series)
+                        await msg.answer("Старый сериал удален!")
 
+                else:
+                    db_movies=await db.get_movies_for_add(data['title'],data['year'])
+                    print(db_movies)
+                    if data['year'] is not None:
+                        sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}\n{data['year']}")
+                    else:
+                        sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}") 
+                    await db.add_movie(data['title'],sended_movie.message_id,data['year'])
+                    if db_movies is not None:
+                        await db.delete_movie_by_tg_id(db_movies)
+                        await bot.delete_message(int(config.chat_id.get_secret_value()),int(db_movies))
+                        await msg.answer("Старый фильм удален!")
             else:
-
                 db_movies=await db.get_movies_for_add(data['title'],data['year'])
-
-                sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}\n{data['year']}")
-                await db.add_movie(data['title'],sended_movie.message_id,int(data['year']))
+                print(db_movies)
+                if data['year'] is not None:
+                    sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}\n{data['year']}")
+                else:
+                    sended_movie=await data['video_msg'].copy_to(int(config.chat_id.get_secret_value()),caption=f"{data['title']}")                 
+                await db.add_movie(data['title'],sended_movie.message_id,data['year'])
                 if db_movies is not None:
                     await db.delete_movie_by_tg_id(db_movies)
                     await bot.delete_message(int(config.chat_id.get_secret_value()),int(db_movies))
                     await msg.answer("Старый фильм удален!")
         
+
             await msg.answer("Все по кайфу")
             await state.clear()
 
@@ -136,6 +160,6 @@ def register_handlers():
     router.message.register(add_title,StateFilter(AddingMovieState.movie_video),F.video.is_not(None).__or__(F.text.startswith("t.me/")).__or__(F.text.startswith("https://t.me/")))
     router.message.register(add_year,StateFilter(AddingMovieState.movie_title))
     router.message.register(confirm,StateFilter(AddingMovieState.movie_year), F.text.isdigit())
-    router.message.register(confirm_next,StateFilter(AddingMovieState.movie_year), Command('/next'))
+    router.message.register(confirm_next,StateFilter(AddingMovieState.movie_year), Command('next'))
     router.message.register(get_confirmation,StateFilter(AddingMovieState.movie_confirm),F.text.lower().in_({"да","нет"}))
     router.message.register(stop,StateFilter(AddingMovieState),Command('stop'))

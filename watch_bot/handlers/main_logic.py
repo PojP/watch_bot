@@ -58,7 +58,7 @@ async def get_film(callback: CallbackQuery,bot:Bot):
                         url=callback.data
                     )
                 )
-                await callback.message.answer(f"Haжмите на кнопку{callback.data}",reply_markup=builder.as_markup(),protect_content=True)                                              
+                await callback.message.answer(f"Haжмите на кнопку",reply_markup=builder.as_markup(),protect_content=True)                                              
             else:
                 await bot.copy_message(callback.from_user.id,from_chat_id=int(config.chat_id.get_secret_value()),message_id=callback.data,reply_markup=builder.as_markup(),protect_content=True)
         else:

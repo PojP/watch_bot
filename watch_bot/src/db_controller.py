@@ -222,9 +222,12 @@ class DB_Controller:
     async def add_movie(self,title,msg_id,year):
         try:
             async with self.engine.connect() as conn:
+                if year is not None:
+                    year=int(year)
+
                 ins=movies.insert().values(
                     title=title,
-                    year=int(year),
+                    year=year,
                     tg_id=msg_id
                     )
                 a=await conn.execute(ins)
@@ -237,9 +240,11 @@ class DB_Controller:
     async def add_serial(self, title,channel_link,year):
         try:
             async with self.engine.connect() as conn:
+                if year is not None:
+                    year=int(year)
                 ins=series.insert().values(
                     title=title,
-                    year=int(year),
+                    year=year,
                     channel_link=channel_link
                     )
                 a=await conn.execute(ins)
