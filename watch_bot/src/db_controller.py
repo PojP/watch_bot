@@ -4,6 +4,8 @@ from sqlalchemy import MetaData, Table, String, Integer, Column, DateTime, Text,
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
+from src.utils import Episode, find_accuracy
+
 metadata = MetaData()
 
 users = Table('users_users', metadata, 
@@ -63,7 +65,7 @@ class DB_Controller:
         await self.engine.dispose()
     def remove_all_symbols(self,s:str):
         return s.replace('.','').replace(',','').replace(':','').lower()
-
+    """
     def movie_sorter(self, s,query):
         e_query=self.remove_all_symbols(query)
         e_s=s.copy()
@@ -74,7 +76,7 @@ class DB_Controller:
             if len(e_query)/len(e_s[0])>=0.3:
                 return [s,0]
             return [s,1]
-        return [s,2]
+        return [s,2]"""
 
     async def get_movies(self,title):
         try:
@@ -84,8 +86,9 @@ class DB_Controller:
                 films=(await conn.execute(sel)).fetchall()
                 sel=series.select()
                 series_links=(await conn.execute(sel)).fetchall()
-                
-                all_movies=[]                                                                                                 
+
+                all_movies=[]
+                """
                 for i in films: 
                     if self.remove_all_symbols(title) in self.remove_all_symbols(i[1]):
                         if i[2] is not None:
@@ -100,25 +103,33 @@ class DB_Controller:
                             br=[i[1],str(i[2]),i[3]]
                         else:
                             br=[i[1],i[3]]
-                        all_movies.append(br)
+                        all_movies.append(br)"""
+                for i in films:
+                    
+                    br=Episode(i[3],i[1],0,i[2])
+                    all_movies.append(br)                                                 
+                for i in series_links:
+                    br=Episode(i[3],i[1],0,i[2])
+                    all_movies.append(br)
 
 
-
-                result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                              
+                result=map(lambda k: find_accuracy(k,title),all_movies)
+                #result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                                                  
                 result=list(result)
                 result=sorted(result,key=lambda k:k[1])
+                print(result[-10:-1])
                 all_movies=[]
                 for i in result:
-                    if len(i[0])==3:
-                        br=[i[0][0]+" "+str(i[0][1]),i[0][2]]
+                    if i[0].year is not None:
+                        br=[i[0].title+" "+str(i[0].year),i[0].tg_id]
                         all_movies.append(br)
                     else:
-                        all_movies.append(i[0])
+                        all_movies.append([i[0].title,i[0].tg_id])
         except Exception as e:
             print(e)
             return e
         else:
-            return all_movies
+            return list(reversed(all_movies))[:20]
 
 
 
@@ -269,6 +280,26 @@ class DB_Controller:
             return e
         else:
             return res
+    async def get_active_user_by_entering(self,amount):
+        try: 
+            async with self.engine.connect() as conn:
+                sel=active_time.select()
+                res=(await conn.execute(sel)).fetchall()
+                
+                user_list=[]
+                for i in res:
+                    user_list.append(i[1])
+
+                unique_user_list=list(set(user_list))
+
+                counter=0
+                for i in unique_user_list:
+                    if user_list.count(i)>=amount:
+                        counter+=1
+        except Exception as e:
+            return e
+        else:
+            return counter
 
     
     async def add_search_query(self,query,user_id):

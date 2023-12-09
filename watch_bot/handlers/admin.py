@@ -206,6 +206,7 @@ async def confirm_delete(msg: types.Message, state: FSMContext,bot: Bot):
             print(data)
             tgid=data['tg_id']
             if tgid.isdigit():
+                tgid=int(tgid)
                 await db.delete_movie_by_tg_id(tgid)
                 await bot.delete_message(int(config.chat_id.get_secret_value()),tgid)
             else:
