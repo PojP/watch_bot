@@ -9,3 +9,5 @@ pyrogram
 tgcrypto
 redis
 gunicorn
+numpy
+rapidfuzz
