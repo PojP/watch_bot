@@ -158,9 +158,9 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
             referral=int(decode_payload(referral))
             a=await db.increment_referrals(referral)
             b=await db.get_user_info(referral)
-            if b[4]==5:
+            if b[4]==1:
                 await db.disable_ads(referral)
-                await bot.send_message(referral,"<b>Количество рефералов равно 5. Реклама отключена!</b>")
+                await bot.send_message(referral,"<b>Количество рефералов равно 1. Реклама отключена!</b>")
 
             await bot.send_message(referral,"<b>По вашей реферальной ссылке есть новый пользователь!</b>")
             if isinstance(a, Exception):
@@ -225,7 +225,7 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
                 photo=FSInputFile("res/main.png")
                 await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
                 await msg.answer("Чтобы найти фильм - просто введи название:)")
-                await msg.answer("Если вы приведете 5х людей по реф. ссылке в профиле - \n<b>У Вас Навсегда Отключится Реклама!</b>")
+                await msg.answer("Если вы приведете 1 человека по реф. ссылке в профиле - \n<b>У Вас Навсегда Отключится Реклама!</b>")
                 await db.increment_active_users(msg.from_user.id)
         else:
             photo=FSInputFile("res/main.png")
