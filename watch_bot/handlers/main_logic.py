@@ -158,9 +158,11 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
             referral=int(decode_payload(referral))
             a=await db.increment_referrals(referral)
             b=await db.get_user_info(referral)
-            if b[4]==1:
-                await db.disable_ads(referral)
-                await bot.send_message(referral,"<b>Количество рефералов равно 1. Реклама отключена!</b>")
+            if b[4]>=1:
+                get_user=await db.get_user_info(referral)
+                if get_user[5]:
+                    await db.disable_ads(referral)
+                    await bot.send_message(referral,"<b>Количество рефералов равно 1. Реклама отключена!</b>")
 
             await bot.send_message(referral,"<b>По вашей реферальной ссылке есть новый пользователь!</b>")
             if isinstance(a, Exception):
