@@ -208,7 +208,8 @@ async def confirm_delete(msg: types.Message, state: FSMContext,bot: Bot):
             if tgid.isdigit():
                 tgid=int(tgid)
                 await db.delete_movie_by_tg_id(tgid)
-                await bot.delete_message(int(config.chat_id.get_secret_value()),tgid)
+                #await bot.delete_message(int(config.chat_id.get_secret_value()),tgid)
+
             else:
                 await db.delete_serial_by_channel_link(tgid)
             await msg.answer("По кайфу")                                                  

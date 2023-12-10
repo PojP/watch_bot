@@ -52,6 +52,10 @@ def find_accuracy(episode: Episode, query: str):
                 diagonales.append(int((np.diag(accuracy,i)).sum()*1.2/len(query_words_array)))
             else:
                 diagonales.append( int( ((np.diag(accuracy,i) ).sum())/len(query_words_array)) )
+
+        if max(diagonales)<70:
+            return [episode,0]
+
         del accuracy
         full_title_case=(len(query)/len(episode.title))
         if full_title_case<=1.0 and full_title_case>0.7:

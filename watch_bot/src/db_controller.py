@@ -117,9 +117,11 @@ class DB_Controller:
                 #result=map(lambda k: self.movie_sorter(k,title),all_movies)                                                                                                                                  
                 result=list(result)
                 result=sorted(result,key=lambda k:k[1])
-                print(result[-10:-1])
+                print(result[-10:])
                 all_movies=[]
                 for i in result:
+                    if i[1] == 0:
+                        continue
                     if i[0].year is not None:
                         br=[i[0].title+" "+str(i[0].year),i[0].tg_id]
                         all_movies.append(br)
