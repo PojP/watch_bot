@@ -12,7 +12,10 @@ import datetime
 from aiogram.filters import StateFilter
 from aiogram.exceptions import TelegramForbiddenError
 
-
+from apscheduler.schedulers.background import BackgroundScheduler
+ 
+# Создает ФОНОВЫЙ планировщик
+scheduler = BackgroundScheduler()
 
 router=Router()
 user_frienfly_error_text="Произошла ошибка. Она уже отправлена разработчикам:("
@@ -104,6 +107,8 @@ async def confirm_buttons(msg: types.Message, state: FSMContext, bot: Bot):
     await state.update_data(builder=buttons)
     await state.update_data(time_set=datetime.datetime.now())
     await msg.answer("Теперь введи количество юзеров") 
+    
+
 
 def is_digit(s:str):
     return s.isdigit()

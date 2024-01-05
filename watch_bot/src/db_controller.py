@@ -48,7 +48,10 @@ series = Table('series_series', metadata,
     Column('channel_link', String(200), nullable=False),
     Column('rating', Integer(),  nullable=True),
     )
-
+reserve_list=Table('reverve_bot_list',metadata,
+    Column('id',Integer(),primary_key=True),
+    Column('user_id',String(200),nullable=False,unique=False),
+    Column('reserve_bot_id',String(200),nullable=False,unique=False),)
 
 
 
@@ -302,7 +305,19 @@ class DB_Controller:
             return e
         else:
             return counter
-
+    async def check_reserve_following(self,user_id,bot):
+        try:
+            async with self.engine.connect() as conn:
+                sel=reserve_list.select().where(
+                        reserve_list.c.user_id==str(user_id),
+                        reserve_list.c.reserve_bot_id==bot
+                        )
+                a=(await conn.execute(sel)).rowcount
+                if a != 0:
+                    return True
+                return False
+        except Exception as e:
+            return e
     
     async def add_search_query(self,query,user_id):
         try:

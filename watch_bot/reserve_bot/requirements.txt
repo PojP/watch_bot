@@ -1,0 +1,13 @@
+aiogram
+pydantic
+pydantic_settings
+django
+sqlalchemy[asyncio]
+asyncpg
+psycopg2
+pyrogram
+tgcrypto
+redis
+gunicorn
+numpy
+rapidfuzz

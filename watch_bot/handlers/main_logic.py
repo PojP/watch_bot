@@ -1,7 +1,7 @@
 from aiogram import Router, types, Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters.command import Command, CommandObject
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, WebAppInfo,InlineKeyboardMarkup,InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -98,9 +98,7 @@ async def search_film(msg: types.Message, state: FSMContext, bot: Bot):
 #/profile
 async def profile(callback: CallbackQuery,bot: Bot):
     try:
-        print(callback)
         user_info=await db.get_user_info(callback.from_user.id)
-        print(user_info)
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(
             text="Главная",
@@ -158,7 +156,7 @@ async def increment_referral(msg: types.Message, command: CommandObject,bot: Bot
             referral=int(decode_payload(referral))
             a=await db.increment_referrals(referral)
             b=await db.get_user_info(referral)
-            if b[4]>=1:
+            if b[4]>=5:
                 get_user=await db.get_user_info(referral)
                 if get_user[5]:
                     await db.disable_ads(referral)
@@ -233,6 +231,19 @@ async def start(msg: types.Message, command: CommandObject,bot: Bot):
             photo=FSInputFile("res/main.png")
             await bot.send_photo(msg.from_user.id,photo,reply_markup=builder.as_markup())
             await msg.answer("Чтобы найти фильм - просто введи название:)")
+            """
+            await msg.answer(
+                    "Test",
+                    reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="Open Webview", url='https://7e77-109-127-134-17.ngrok-free.app'
+                        )
+                    ]
+                ]
+            ),)"""
+
     except Exception as e:
         await send_error_to_devs(msg,error=e,error_text="Ошибка при команде /start",bot=bot)    
 def register_handlers():                                                                                           

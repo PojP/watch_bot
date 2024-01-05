@@ -7,3 +7,8 @@ services:
       - .env
     restart: always
     network_mode: host
+  reserve_bot:
+    build: ./reserve_bot/
+    command: sh -c "python3 main.py"
+    restart: always
+    network_mode: host

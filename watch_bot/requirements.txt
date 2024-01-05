@@ -10,4 +10,5 @@ tgcrypto
 redis
 gunicorn
 numpy
+apscheduler
 rapidfuzz
